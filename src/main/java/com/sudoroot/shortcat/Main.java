@@ -25,6 +25,8 @@ public class Main {
             FlatLightLaf.setup();
         }
 
+        Database.initDatabase();
+
         Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
         logger.setLevel(Level.WARNING);
         logger.setUseParentHandlers(false);

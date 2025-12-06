@@ -20,3 +20,8 @@ out/
 
 # --- Windows junk ---
 Thumbs.db
+
+# --- Database ---
+*.db
+db/*.db
+*.sqlite
