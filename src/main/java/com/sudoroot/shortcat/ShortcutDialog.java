@@ -79,23 +79,29 @@ public class ShortcutDialog extends JDialog {
     }
 
     private void onOK() {
+        // Обработчик теперь только вызывает метод логики
+        try {
+            result = createValidEntry();
+            dispose();
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Вся валидация и создание объекта вынесены из обработчика
+    private ShortcutEntry createValidEntry() {
         if (commandField.getText().trim().isEmpty() || keywordField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Команда и ключевое слово не могут быть пустыми.", "Ошибка", JOptionPane.ERROR_MESSAGE);
-            return;
+            throw new IllegalArgumentException("Команда и ключевое слово не могут быть пустыми.");
         }
 
         UUID id = (entryBeingEdited != null) ? entryBeingEdited.getId() : UUID.randomUUID();
         ShortcutEntry candidate = new ShortcutEntry(id, commandField.getText().trim(), keywordField.getText().trim(), expansionArea.getText());
 
         if (shortcutManager.isDuplicateExists(candidate)) {
-            JOptionPane.showMessageDialog(this,
-                    "Ярлык с такой комбинацией команды и ключевого слова уже существует.",
-                    "Ошибка: Дубликат", JOptionPane.ERROR_MESSAGE);
-            return;
+            throw new IllegalArgumentException("Ярлык с такой комбинацией команды и ключевого слова уже существует.");
         }
 
-        result = candidate;
-        dispose();
+        return candidate;
     }
 
     public static Optional<ShortcutEntry> showDialog(Frame owner, String title, ShortcutManager manager, ShortcutEntry entry) {

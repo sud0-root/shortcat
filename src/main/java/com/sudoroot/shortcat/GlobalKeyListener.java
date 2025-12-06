@@ -6,7 +6,7 @@ import java.awt.AWTException;
 
 public class GlobalKeyListener implements NativeKeyListener {
 
-    private final StringBuilder typedBuffer = new StringBuilder();
+    private final StringBuilder inputBuffer = new StringBuilder(); // RENAME: typedBuffer -> inputBuffer
     private final ShortcutManager shortcutManager;
     private final TextExpander textExpander;
     private static final int BUFFER_LIMIT = 100;
@@ -24,8 +24,8 @@ public class GlobalKeyListener implements NativeKeyListener {
 
 
     public void resetBuffer() {
-        if (typedBuffer.length() > 0) {
-            typedBuffer.setLength(0);
+        if (inputBuffer.length() > 0) {
+            inputBuffer.setLength(0);
         }
     }
 
@@ -36,21 +36,22 @@ public class GlobalKeyListener implements NativeKeyListener {
         char keyChar = e.getKeyChar();
 
         if (!Character.isISOControl(keyChar)) {
-            typedBuffer.append(keyChar);
+            inputBuffer.append(keyChar);
         } else {
             resetBuffer();
             return;
         }
 
-        if (typedBuffer.length() > BUFFER_LIMIT) {
-            typedBuffer.delete(0, typedBuffer.length() - BUFFER_LIMIT);
+        if (inputBuffer.length() > BUFFER_LIMIT) {
+            inputBuffer.delete(0, inputBuffer.length() - BUFFER_LIMIT);
         }
 
-        ShortcutEntry match = shortcutManager.findExpansion(typedBuffer.toString().toLowerCase());
+        // rename: match -> detectedShortcut
+        ShortcutEntry detectedShortcut = shortcutManager.findExpansion(inputBuffer.toString().toLowerCase());
 
-        if (match != null) {
-            final String fullShortcut = match.getFullShortcutText();
-            final String expansion = match.getExpansionText();
+        if (detectedShortcut != null) {
+            final String fullShortcut = detectedShortcut.getFullShortcutText();
+            final String expansion = detectedShortcut.getExpansionText();
 
             new Thread(() -> {
                 try {
@@ -84,8 +85,8 @@ public class GlobalKeyListener implements NativeKeyListener {
         }
 
         if (code == NativeKeyEvent.VC_BACKSPACE) {
-            if (typedBuffer.length() > 0) {
-                typedBuffer.setLength(typedBuffer.length() - 1);
+            if (inputBuffer.length() > 0) {
+                inputBuffer.setLength(inputBuffer.length() - 1);
             }
         }
     }

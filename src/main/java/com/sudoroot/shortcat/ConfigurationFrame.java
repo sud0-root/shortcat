@@ -6,26 +6,52 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Random;
 
 public class ConfigurationFrame extends JFrame {
 
     private final ShortcutManager shortcutManager;
-    private final JTable shortcutTable;
-    private final DefaultTableModel tableModel;
-    private final JLabel statusLabel;
+    // deleted final
+    private JTable shortcutTable;
+    private DefaultTableModel tableModel;
+    private JLabel footerStatusLabel;
 
     public ConfigurationFrame(ShortcutManager shortcutManager) {
         this.shortcutManager = shortcutManager;
+        initWindow();
 
+        // extract: Настройка главной панели вынесена
+        JPanel mainPanel = setupMainPanel();
+
+        // extract: Настройка таблицы вынесена
+        setupTable();
+        JScrollPane scrollPane = new JScrollPane(shortcutTable);
+        scrollPane.setBorder(new CompoundBorder(
+                new EmptyBorder(5, 0, 0, 0),
+                new InnerShadowBorder(UIManager.getColor("innerShadowColor"), 5)
+        ));
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // extract: Настройка подвала вынесена
+        mainPanel.add(setupFooter(), BorderLayout.SOUTH);
+
+        setContentPane(mainPanel);
+        refreshTable();
+    }
+
+    // extract: Инициализация свойств окна
+    private void initWindow() {
         setTitle("Настройка ShortCAT");
         setIconImage(Main.createImage("/images/tray_icon.png", "app icon"));
         setSize(800, 500);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
+    }
 
-        JPanel mainPanel = new JPanel(new BorderLayout(0, 10)) {
+    private JPanel setupMainPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 10)) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -41,8 +67,11 @@ public class ConfigurationFrame extends JFrame {
                 g2d.dispose();
             }
         };
-        mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        return panel;
+    }
 
+    private void setupTable() {
         String[] columnNames = {"Команда", "Ключевое слово", "Текст расширения"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
@@ -56,47 +85,37 @@ public class ConfigurationFrame extends JFrame {
         shortcutTable.getTableHeader().setFont(shortcutTable.getTableHeader().getFont().deriveFont(Font.BOLD));
         shortcutTable.setAutoCreateRowSorter(true);
         setTableColumnWidths();
+    }
 
-        JScrollPane scrollPane = new JScrollPane(shortcutTable);
-        scrollPane.setBorder(new CompoundBorder(
-                new EmptyBorder(5, 0, 0, 0),
-                new InnerShadowBorder(UIManager.getColor("innerShadowColor"), 5)
-        ));
-
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-
+    private JPanel setupFooter() {
         JPanel footerPanel = new GradientPanel(new BorderLayout(),
                 UIManager.getColor("panelBackgroundColor"),
                 UIManager.getColor("panelGradientEndColor"));
 
-        statusLabel = new JLabel("Всего ярлыков: 0");
-        statusLabel.setForeground(UIManager.getColor("foregroundColor"));
-        statusLabel.setBorder(new EmptyBorder(5, 5, 5, 5));
-        footerPanel.add(statusLabel, BorderLayout.WEST);
+        footerStatusLabel = new JLabel("Всего ярлыков: 0");
+        footerStatusLabel.setForeground(UIManager.getColor("foregroundColor"));
+        footerStatusLabel.setBorder(new EmptyBorder(5, 5, 5, 5));
+        footerPanel.add(footerStatusLabel, BorderLayout.WEST);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setOpaque(false);
 
-        JButton addButton = new JButton("Добавить", IconLoader.load("add.svg"));
-        JButton editButton = new JButton("Изменить", IconLoader.load("edit.svg"));
-        JButton deleteButton = new JButton("Удалить", IconLoader.load("delete.svg"));
+        // remove deduplication: Использование метода createButton
+        buttonPanel.add(createButton("Добавить", "add.svg", e -> handleAdd()));
+        buttonPanel.add(createButton("Изменить", "edit.svg", e -> handleEdit()));
+        buttonPanel.add(createButton("Удалить", "delete.svg", e -> handleDelete()));
 
-        buttonPanel.add(addButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
         footerPanel.add(buttonPanel, BorderLayout.EAST);
-
-        mainPanel.add(footerPanel, BorderLayout.SOUTH);
-
-        setContentPane(mainPanel);
-
-        addButton.addActionListener(e -> addShortcutAction());
-        editButton.addActionListener(e -> editShortcutAction());
-        deleteButton.addActionListener(e -> deleteShortcutAction());
-
-        refreshTable();
+        return footerPanel;
     }
-    
+
+    // remove deduplication: Метод для создания кнопок
+    private JButton createButton(String text, String iconName, ActionListener action) {
+        JButton button = new JButton(text, IconLoader.load(iconName));
+        button.addActionListener(action);
+        return button;
+    }
+
     public void refreshTable() {
         int selectedRow = shortcutTable.getSelectedRow();
         tableModel.setRowCount(0);
@@ -107,7 +126,7 @@ public class ConfigurationFrame extends JFrame {
         if (selectedRow >= 0 && selectedRow < shortcutTable.getRowCount()) {
             shortcutTable.setRowSelectionInterval(selectedRow, selectedRow);
         }
-        statusLabel.setText("Всего ярлыков: " + shortcuts.size());
+        footerStatusLabel.setText("Всего ярлыков: " + shortcuts.size());
     }
 
     private void setTableColumnWidths() {
@@ -122,7 +141,8 @@ public class ConfigurationFrame extends JFrame {
         column.setPreferredWidth(450);
     }
 
-    private void addShortcutAction() {
+    // rename: addShortcutAction -> handleAdd
+    private void handleAdd() {
         ShortcutDialog.showDialog(this, "Добавить новый ярлык", shortcutManager, null)
                 .ifPresent(newEntry -> {
                     shortcutManager.addShortcut(newEntry);
@@ -131,7 +151,8 @@ public class ConfigurationFrame extends JFrame {
                 });
     }
 
-    private void editShortcutAction() {
+    // rename: editShortcutAction -> handleEdit
+    private void handleEdit() {
         int selectedRow = shortcutTable.getSelectedRow();
         if (selectedRow == -1) {
             JOptionPane.showMessageDialog(this, "Пожалуйста, выберите ярлык для редактирования.", "Внимание", JOptionPane.WARNING_MESSAGE);
@@ -146,7 +167,8 @@ public class ConfigurationFrame extends JFrame {
                 });
     }
 
-    private void deleteShortcutAction() {
+    // rename: deleteShortcutAction -> handleDelete
+    private void handleDelete() {
         int selectedRow = shortcutTable.getSelectedRow();
         if (selectedRow == -1) {
             JOptionPane.showMessageDialog(this, "Пожалуйста, выберите ярлык для удаления.", "Внимание", JOptionPane.WARNING_MESSAGE);
