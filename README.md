@@ -25,7 +25,7 @@
 
 1. Клонируйте репозиторий:
    ```bash
-   git clone https://github.com/your-username/shortcat.git
+   git clone https://github.com/sud0-root/shortcat.git
    ```
 2. Соберите проект:
    ```bash
@@ -47,4 +47,3 @@ jpackage --input target/ --name ShortCAT --main-jar shortcat-1.0.0.jar ...
 ## 📄 Лицензия
 
 Этот проект распространяется под лицензией MIT.
-```
